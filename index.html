@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>座位生成 · 课堂座位表</title>
+    <meta name="description" content="智能课堂座位生成器，支持请假、补坐、未就坐状态，动态Emoji显示">
+    <meta name="keywords" content="座位表,课堂,排座,请假,补坐">
+    <meta name="author" content="Seat Generator">
+    <meta property="og:title" content="座位生成 · 课堂座位表">
+    <meta property="og:description" content="智能课堂座位生成器，支持多种状态和动态Emoji">
+    <meta property="og:type" content="website">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(145deg, #e9f2f9 0%, #d5e6f2 100%);
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+        
+        .app {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        /* 头部样式 */
+        .header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            background: linear-gradient(145deg, #0a3f5e, #1d6b96);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0 1rem;
+        }
+        
+        /* 主名单面板 */
+        .master-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 2.5rem;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 15px 35px -15px rgba(14, 61, 89, 0.3);
+        }
+        
+        .master-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .master-title h2 {
+            color: #125e88;
+            font-size: 1.6rem;
+            font-weight: 600;
+        }
+        
+        .master-badge {
+            background: #1b4f72;
+            color: white;
+            padding: 0.3rem 1.5rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        
+        .start-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #fff3e0;
+            padding: 0.3rem 1.5rem;
+            border-radius: 60px;
+            margin-left: auto;
+            flex-wrap: wrap;
+        }
+        
+        .start-selector label {
+            font-weight: 600;
+            color: #b45b0a;
+        }
+        
+        .start-selector select {
+            padding: 0.4rem 1rem;
+            border: 2px solid #f0b27a;
+            border-radius: 40px;
+            background: white;
+            font-weight: 500;
+            color: #125177;
+            min-width: 150px;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+        
+        .master-name-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+        
+        .master-textarea {
+            flex: 3 1 500px;
+        }
+        
+        .master-textarea textarea {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            border: 2px solid #b9d9f2;
+            border-radius: 28px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 130px;
+            background: #f5f9ff;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', monospace;
+            cursor: default;
+            line-height: 1.6;
+        }
+        
+        /* 日期控制栏 */
+        .date-bar {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 3rem;
+            padding: 1rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 20px -10px rgba(14, 61, 89, 0.2);
+        }
+        
+        .date-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #d4e9f7;
+            padding: 0.4rem 1.5rem;
+            border-radius: 40px;
+        }
+        
+        .date-btn {
+            background: white;
+            border: 2px solid #1b4f72;
+            color: #1b4f72;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .date-btn:hover {
+            background: #e1effa;
+            transform: scale(1.05);
+        }
+        
+        .current-date {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #12547a;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .global-actions {
+            display: flex;
+            gap: 1rem;
+            margin-left: auto;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            background: white;
+            border: 2px solid #1b4f72;
+            color: #1b4f72;
+            padding: 0.6rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn:hover {
+            background: #e1effa;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary {
+            background: #1b4f72;
+            color: white;
+            border-color: #1b4f72;
+        }
+        
+        .btn-primary:hover {
+            background: #0e405c;
+        }
+        
+        /* 课程序列 */
+        .lessons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        
+        .lesson-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border-radius: 2.5rem;
+            padding: 1.5rem 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 12px 30px -12px rgba(14, 61, 89, 0.25);
+            transition: transform 0.2s ease;
+        }
+        
+        .lesson-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .lesson-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .lesson-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #d3e8f8;
+            padding: 0.2rem 2rem;
+            border-radius: 60px;
+        }
+        
+        .lesson-title input {
+            border: none;
+            background: transparent;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #0f4465;
+            width: 200px;
+            border-bottom: 2px dashed #3683af;
+            padding: 0.2rem 0;
+            transition: border-bottom 0.2s;
+        }
+        
+        .lesson-title input:focus {
+            outline: none;
+            border-bottom: 2px solid #125e88;
+        }
+        
+        .lesson-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .seats-selector {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .seats-button {
+            background: #e1f0fa;
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            color: #125177;
+            border: 2px solid #97c3e6;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+        }
+        
+        .seats-button:hover {
+            background: #c9e2f5;
+            transform: scale(1.02);
+        }
+        
+        .seats-button span {
+            font-weight: 600;
+            margin-left: 5px;
+        }
+        
+        .seats-picker {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 5px;
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            padding: 15px 10px;
+            z-index: 1000;
+            display: none;
+            width: 180px;
+            border: 2px solid #97c3e6;
+        }
+        
+        .seats-picker.show {
+            display: block;
+        }
+        
+        .picker-header {
+            text-align: center;
+            font-weight: 600;
+            color: #125177;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .picker-slider {
+            width: 100%;
+            height: 200px;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            border: 2px solid #dbeefc;
+            border-radius: 20px;
+            padding: 5px 0;
+            background: #f5f9ff;
+        }
+        
+        .picker-slider::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .picker-slider::-webkit-scrollbar-track {
+            background: #dbeefc;
+            border-radius: 10px;
+        }
+        
+        .picker-slider::-webkit-scrollbar-thumb {
+            background: #1b4f72;
+            border-radius: 10px;
+        }
+        
+        .picker-item {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 500;
+            color: #125177;
+            scroll-snap-align: center;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+        
+        .picker-item:hover {
+            background: #dbeefc;
+            font-size: 1.4rem;
+        }
+        
+        .picker-item.selected {
+            background: #1b4f72;
+            color: white;
+            font-size: 1.4rem;
+        }
+        
+        .picker-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding: 0 5px;
+        }
+        
+        .picker-btn {
+            background: #e1f0fa;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 30px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #125177;
+            cursor: pointer;
+            border: 2px solid #97c3e6;
+            transition: all 0.2s;
+        }
+        
+        .picker-btn:hover {
+            background: #c9e2f5;
+        }
+        
+        .lesson-actions {
+            display: flex;
+            gap: 0.7rem;
+            margin-left: auto;
+            flex-wrap: wrap;
+        }
+        
+        .small-btn {
+            padding: 0.4rem 1.3rem;
+            font-size: 0.85rem;
+        }
+        
+        /* 姓名芯片 */
+        .action-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            background: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 60px;
+            min-height: 3rem;
+            margin-bottom: 1rem;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+        
+        .name-chip {
+            background: #e1f0fa;
+            border: 2px solid #97c3e6;
+            color: #125177;
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+        
+        .name-chip:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .name-chip.absent {
+            background: #e63946;
+            border-color: #b13e3e;
+            color: white;
+        }
+        
+        .name-chip.missed {
+            background: #9e9e9e;
+            border-color: #666666;
+            color: white;
+        }
+        
+        .name-chip.insert {
+            background: #ffc107;
+            border-color: #d4a017;
+            color: #1d4e72;
+        }
+        
+        /* 统计行 */
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem 2rem;
+            background: #dbeefc;
+            padding: 0.8rem 2rem;
+            border-radius: 60px;
+            margin: 1rem 0;
+            justify-content: center;
+        }
+        
+        .stat {
+            display: flex;
+            gap: 0.5rem;
+            align-items: baseline;
+        }
+        
+        .stat-label {
+            font-weight: 600;
+            color: #0e4b70;
+        }
+        
+        .stat-value {
+            background: #1b4f72;
+            color: white;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+            font-weight: 500;
+        }
+        
+        /* 座位网格 */
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 1rem;
+            margin: 1.5rem 0;
+        }
+        
+        .seat-card {
+            background: white;
+            border-radius: 1.5rem 0.8rem 1.5rem 0.8rem;
+            padding: 1rem 0.2rem;
+            text-align: center;
+            box-shadow: 0 8px 18px -12px #0a334a;
+            border: 2px solid white;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .seat-card.occupied {
+            background: linear-gradient(145deg, #1b4f72, #2b6d95);
+            color: white;
+        }
+        
+        .seat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 24px -12px #0a334a;
+        }
+        
+        .seat-num {
+            font-size: 0.75rem;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .seat-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 2px;
+            word-break: break-word;
+            max-width: 90%;
+        }
+        
+        .seat-status-emoji {
+            font-size: 1.3rem;
+            line-height: 1;
+            margin-top: 4px;
+            display: inline-block;
+        }
+        
+        /* Emoji动画 */
+        .seat-status-emoji.breathe {
+            animation: breathe 2s ease-in-out infinite;
+        }
+        
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+        
+        .seat-status-emoji.float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+        
+        .seat-status-emoji.spin {
+            animation: spin 4s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .seat-status-emoji.heartbeat {
+            animation: heartbeat 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            25% { transform: scale(1.15); }
+            50% { transform: scale(1); }
+            75% { transform: scale(1.15); }
+        }
+        
+        .seat-status-emoji.shake {
+            animation: shake 0.5s ease-in-out infinite;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+        
+        .seat-status-emoji.bounce {
+            animation: bounce 1s ease-in-out infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        
+        /* 状态选择弹窗 */
+        .status-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            animation: fadeIn 0.2s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .status-panel {
+            background: white;
+            border-radius: 40px;
+            padding: 2rem;
+            max-width: 550px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease;
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .status-panel h3 {
+            color: #125177;
+            font-size: 1.6rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .status-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .status-option {
+            background: #f5f9ff;
+            border: 2px solid #97c3e6;
+            border-radius: 30px;
+            padding: 1rem 0.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .status-option:hover {
+            background: #e1f0fa;
+            transform: scale(1.02);
+        }
+        
+        .status-option.selected {
+            background: #1b4f72;
+            border-color: #1b4f72;
+            color: white;
+        }
+        
+        .status-option .emoji {
+            font-size: 2.2rem;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+        
+        .status-option .label {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        
+        .status-option .description {
+            font-size: 0.8rem;
+            opacity: 0.8;
+            margin-top: 0.3rem;
+        }
+        
+        .status-panel-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .status-panel-btn {
+            padding: 0.8rem 2rem;
+            border-radius: 40px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+        
+        .status-panel-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .clear-btn {
+            background: #9e9e9e;
+            color: white;
+        }
+        
+        .confirm-btn {
+            background: #1b4f72;
+            color: white;
+        }
+        
+        .cancel-btn {
+            background: #e1f0fa;
+            color: #125177;
+        }
+        
+        .info-note {
+            background: #e4f1fb;
+            border-radius: 60px;
+            padding: 0.8rem 2rem;
+            margin-top: 1rem;
+            color: #0e4b70;
+            border-left: 6px solid #3892bd;
+            font-size: 0.95rem;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .master-panel,
+            .date-bar,
+            .lesson-card {
+                padding: 1.2rem 1.2rem;
+                border-radius: 2rem;
+            }
+            
+            .master-title {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .start-selector {
+                margin-left: 0;
+                width: 100%;
+            }
+            
+            .start-selector select {
+                flex: 1;
+            }
+            
+            .date-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .global-actions {
+                margin-left: 0;
+                justify-content: center;
+            }
+            
+            .lesson-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .lesson-actions {
+                margin-left: 0;
+            }
+            
+            .stats-row {
+                padding: 0.8rem 1rem;
+                gap: 1rem;
+            }
+            
+            .seat-grid {
+                grid-template-columns: repeat(auto-fit, minmax(85px, 1fr));
+            }
+            
+            .status-options {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .seat-grid {
+                grid-template-columns: repeat(auto-fit, minmax(75px, 1fr));
+            }
+            
+            .seat-card {
+                min-height: 90px;
+                padding: 0.8rem 0.2rem;
+            }
+            
+            .seat-name {
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* 打印样式 */
+        @media print {
+            body {
+                background: white;
+                padding: 0.5cm;
+            }
+            
+            .master-panel,
+            .date-bar,
+            .global-actions,
+            .lesson-actions,
+            .action-chips,
+            .status-modal {
+                display: none;
+            }
+            
+            .lesson-card {
+                break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #ccc;
+            }
+            
+            .seat-card {
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1>
+            📚 座位生成
+        </h1>
+    </div>
+
+    <!-- 主名单面板 -->
+    <div class="master-panel">
+        <div class="master-title">
+            <h2>📋 总名单池</h2>
+            <span class="master-badge" id="masterCount">55 人</span>
+            <div class="start-selector">
+                <label>▶️ 从谁开始：</label>
+                <select id="startPersonSelect">
+                    <option value="0">请选择起始同学</option>
+                </select>
+            </div>
+        </div>
+        <div class="master-name-area">
+            <div class="master-textarea">
+                <textarea id="masterNameList" readonly>李颜竹
+刘屹男
+赵嘉乐
+宋美瑶
+韩涵
+秦彦君
+王馨怡
+丁志
+金智宇
+李姝颖
+徐莹
+杨钰姣
+龚景瑄
+陈姝米
+张贻坤
+杨珍珍
+高雅诗
+伍倩
+覃玥琦
+曹友慧
+胡佩宇
+资阳
+王博
+彭翊涵
+胡欣竹
+莫殊
+周紫曦
+张雨星
+张芯怡
+欧阳斯麦
+郑坤
+吴璇
+薛佳馨
+李来燕
+刘思宇
+雷乐园
+樊悦烨
+陈思怡
+陈林涛
+雷馨彤
+张妍
+曹静
+何川
+江迅
+揭芙蓉
+符梅姣
+何强强
+龙泽梅
+许曹金烨
+罗昕怡
+穆子萱
+杜守浩
+杨慧欣
+胡艳兰
+文柯玥</textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日期控制栏 -->
+    <div class="date-bar">
+        <div class="date-controls">
+            <button class="date-btn" id="prevDayBtn" aria-label="前一天">←</button>
+            <span class="current-date" id="currentDateDisplay">第 1 天</span>
+            <button class="date-btn" id="nextDayBtn" aria-label="后一天">→</button>
+        </div>
+        <div class="global-actions">
+            <button class="btn" id="addLessonBtn">
+                <span>➕</span> 添加课程
+            </button>
+        </div>
+    </div>
+
+    <!-- 课程序列容器 -->
+    <div id="lessonsContainer" class="lessons-container"></div>
+</div>
+
+<script>
+    (function() {
+        'use strict';
+        
+        // ---------- 全局状态 ----------
+        let currentDay = 0;                 // 当前天数索引 (0 = 第1天)
+        
+        const dayOffsets = new Map();        // 存储每天的开始偏移
+        const dayAbsentSelections = new Map(); // 存储每天每节课的请假状态
+        const dayMissedSelections = new Map(); // 存储每天每节课的未就坐状态
+        const dayInsertSelections = new Map(); // 存储每天每节课的补坐状态
+        const daySeatStatuses = new Map();   // 存储每个座位的个性化状态
+        
+        // 初始化第1天的偏移为0
+        dayOffsets.set(0, 0);
+
+        // 大学生常见上课状态枚举（带动画类型）
+        const studentStatuses = [
+            { emoji: '😊', label: '正常', description: '认真听课', animation: 'breathe' },
+            { emoji: '😴', label: '瞌睡', description: '昏昏欲睡', animation: 'bounce' },
+            { emoji: '📱', label: '玩手机', description: '偷偷看手机', animation: 'shake' },
+            { emoji: '💬', label: '聊天', description: '交头接耳', animation: 'float' },
+            { emoji: '📚', label: '看书', description: '看其他书籍', animation: 'breathe' },
+            { emoji: '🍜', label: '吃早餐', description: '偷偷进食', animation: 'heartbeat' },
+            { emoji: '✏️', label: '记笔记', description: '认真记录', animation: 'breathe' },
+            { emoji: '🤔', label: '发呆', description: '神游天外', animation: 'float' },
+            { emoji: '🚽', label: '上厕所', description: '暂离座位', animation: 'shake' },
+            { emoji: '💻', label: '玩电脑', description: '看剧/游戏', animation: 'spin' },
+            { emoji: '🎧', label: '听歌', description: '戴着耳机', animation: 'bounce' },
+            { emoji: '📷', label: '自拍', description: '偷偷拍照', animation: 'heartbeat' },
+            { emoji: '😷', label: '生病', description: '身体不适', animation: 'shake' },
+            { emoji: '❓', label: '疑惑', description: '一脸懵', animation: 'float' }
+        ];
+
+        // DOM 元素
+        const currentDateDisplay = document.getElementById('currentDateDisplay');
+        const masterTextarea = document.getElementById('masterNameList');
+        const masterCountSpan = document.getElementById('masterCount');
+        const lessonsContainer = document.getElementById('lessonsContainer');
+        const addLessonBtn = document.getElementById('addLessonBtn');
+        const prevDayBtn = document.getElementById('prevDayBtn');
+        const nextDayBtn = document.getElementById('nextDayBtn');
+        const startPersonSelect = document.getElementById('startPersonSelect');
+
+        // 固定名单
+        const fixedNames = parseNames(masterTextarea.value);
+        masterCountSpan.textContent = fixedNames.length + ' 人';
+
+        // 解析姓名
+        function parseNames(raw) {
+            if (!raw || !raw.trim()) return [];
+            let str = raw.replace(/[，、\s]+/g, ',');
+            return str.split(',').map(s => s.trim()).filter(name => name !== '');
+        }
+
+        // 更新下拉框
+        function updateStartSelector() {
+            startPersonSelect.innerHTML = '<option value="0">请选择起始同学</option>';
+            fixedNames.forEach((name, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = name;
+                startPersonSelect.appendChild(option);
+            });
+            startPersonSelect.value = getCurrentDayOffset();
+        }
+
+        // 起始同学选择事件
+        startPersonSelect.addEventListener('change', function() {
+            const selectedIndex = parseInt(this.value, 10);
+            if (!isNaN(selectedIndex)) {
+                dayOffsets.set(currentDay, selectedIndex);
+                refreshAllLessons();
+            }
+        });
+
+        // 转义HTML
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // 核心排座算法
+        function computeSeatingWithSelection(masterNames, absentIndices, missedIndices, insertIndices, totalSeats, baseOffset) {
+            if (masterNames.length === 0) {
+                return { seatItems: Array(totalSeats).fill({ name: '(无名单)' }), lastUsedIndex: 0, nextStart: 0, absentCount: 0, missedCount: 0, insertCount: 0 };
+            }
+
+            const N = masterNames.length;
+            let startIdx = baseOffset % N;
+            if (startIdx < 0) startIdx += N;
+
+            const initialIndices = Array.from({ length: totalSeats }, (_, i) => (startIdx + i) % N);
+            const availableIndices = initialIndices.filter(idx => !absentIndices.has(idx) && !missedIndices.has(idx));
+
+            const seatItems = [];
+            const usedIndices = [];
+            const usedInThisLesson = new Set();
+            
+            const insertArray = Array.from(insertIndices).filter(idx => !absentIndices.has(idx) && !missedIndices.has(idx)).sort((a, b) => a - b);
+            
+            let insertIndex = 0;
+            let regularIndex = 0;
+            
+            for (let i = 0; i < totalSeats; i++) {
+                if (insertIndex < insertArray.length) {
+                    const personIdx = insertArray[insertIndex];
+                    if (!usedInThisLesson.has(personIdx)) {
+                        seatItems.push({ name: masterNames[personIdx], personIdx });
+                        usedIndices.push(personIdx);
+                        usedInThisLesson.add(personIdx);
+                        insertIndex++;
+                    } else {
+                        insertIndex++;
+                        i--;
+                    }
+                } else if (regularIndex < availableIndices.length) {
+                    const personIdx = availableIndices[regularIndex];
+                    if (!usedInThisLesson.has(personIdx)) {
+                        seatItems.push({ name: masterNames[personIdx], personIdx });
+                        usedIndices.push(personIdx);
+                        usedInThisLesson.add(personIdx);
+                        regularIndex++;
+                    } else {
+                        regularIndex++;
+                        i--;
+                    }
+                } else {
+                    let nextIdx = (startIdx + totalSeats + (regularIndex - availableIndices.length)) % N;
+                    let attempts = 0;
+                    while (absentIndices.has(nextIdx) || missedIndices.has(nextIdx) || usedInThisLesson.has(nextIdx)) {
+                        nextIdx = (nextIdx + 1) % N;
+                        attempts++;
+                        if (attempts > N * 2) break;
+                    }
+                    seatItems.push({ name: masterNames[nextIdx], personIdx: nextIdx });
+                    usedIndices.push(nextIdx);
+                    usedInThisLesson.add(nextIdx);
+                }
+            }
+
+            const lastUsedIndex = usedIndices.length > 0 ? usedIndices[usedIndices.length - 1] : startIdx;
+            return {
+                seatItems,
+                lastUsedIndex,
+                nextStart: (lastUsedIndex + 1) % N,
+                absentCount: absentIndices.size,
+                missedCount: missedIndices.size,
+                insertCount: insertIndices.size
+            };
+        }
+
+        // 获取当前天的偏移
+        function getCurrentDayOffset() {
+            if (!dayOffsets.has(currentDay)) {
+                const prevDay = currentDay - 1;
+                dayOffsets.set(currentDay, dayOffsets.has(prevDay) ? dayOffsets.get(prevDay) : 0);
+            }
+            return dayOffsets.get(currentDay);
+        }
+
+        // 状态获取/保存辅助函数
+        function getLessonAbsentSet(card, day = currentDay) {
+            const lessonId = card?.dataset?.lessonId;
+            return lessonId ? dayAbsentSelections.get(`${day}-${lessonId}-absent`) || new Set() : new Set();
+        }
+
+        function getLessonMissedSet(card, day = currentDay) {
+            const lessonId = card?.dataset?.lessonId;
+            return lessonId ? dayMissedSelections.get(`${day}-${lessonId}-missed`) || new Set() : new Set();
+        }
+
+        function getLessonInsertSet(card, day = currentDay) {
+            const lessonId = card?.dataset?.lessonId;
+            return lessonId ? dayInsertSelections.get(`${day}-${lessonId}-insert`) || new Set() : new Set();
+        }
+
+        function getSeatStatus(card, seatIndex, day = currentDay) {
+            const lessonId = card?.dataset?.lessonId;
+            return lessonId ? daySeatStatuses.get(`${day}-${lessonId}-seat-${seatIndex}`) || null : null;
+        }
+
+        function setSeatStatus(card, seatIndex, status, day = currentDay) {
+            const lessonId = card?.dataset?.lessonId;
+            if (!lessonId) return;
+            const key = `${day}-${lessonId}-seat-${seatIndex}`;
+            if (status) daySeatStatuses.set(key, status);
+            else daySeatStatuses.delete(key);
+        }
+
+        function setLessonAbsentSet(card, absentSet, day = currentDay) {
+            const lessonId = card?.dataset?.lessonId;
+            if (!lessonId) return;
+            const key = `${day}-${lessonId}-absent`;
+            if (absentSet.size) dayAbsentSelections.set(key, new Set(absentSet));
+            else dayAbsentSelections.delete(key);
+        }
+
+        function setLessonMissedSet(card, missedSet, day = currentDay) {
+            const lessonId = card?.dataset?.lessonId;
+            if (!lessonId) return;
+            const key = `${day}-${lessonId}-missed`;
+            if (missedSet.size) dayMissedSelections.set(key, new Set(missedSet));
+            else dayMissedSelections.delete(key);
+        }
+
+        function setLessonInsertSet(card, insertSet, day = currentDay) {
+            const lessonId = card?.dataset?.lessonId;
+            if (!lessonId) return;
+            const key = `${day}-${lessonId}-insert`;
+            if (insertSet.size) dayInsertSelections.set(key, new Set(insertSet));
+            else dayInsertSelections.delete(key);
+        }
+
+        // 刷新所有课程
+        function refreshAllLessons() {
+            if (fixedNames.length === 0) {
+                alert('总名单不能为空');
+                return;
+            }
+
+            const currentOffset = getCurrentDayOffset();
+            let runningOffset = currentOffset;
+
+            document.querySelectorAll('.lesson-card').forEach(card => {
+                const seatsDisplay = card.querySelector('.seats-display');
+                const totalSeats = parseInt(seatsDisplay?.textContent, 10) || 20;
+                
+                const result = computeSeatingWithSelection(
+                    fixedNames,
+                    getLessonAbsentSet(card, currentDay),
+                    getLessonMissedSet(card, currentDay),
+                    getLessonInsertSet(card, currentDay),
+                    totalSeats,
+                    runningOffset
+                );
+
+                updateLessonDisplay(card, result, runningOffset);
+                runningOffset = result.nextStart;
+            });
+
+            currentDateDisplay.textContent = `第 ${currentDay + 1} 天`;
+            startPersonSelect.value = currentOffset;
+        }
+
+        // 显示状态选择弹窗
+        function showStatusModal(card, seatIndex, currentStatus) {
+            const modal = document.createElement('div');
+            modal.className = 'status-modal';
+            
+            modal.innerHTML = `
+                <div class="status-panel">
+                    <h3>选择学生状态</h3>
+                    <div class="status-options">
+                        ${studentStatuses.map(status => `
+                            <div class="status-option ${currentStatus?.emoji === status.emoji ? 'selected' : ''}" 
+                                 data-emoji="${status.emoji}" 
+                                 data-label="${status.label}" 
+                                 data-animation="${status.animation}">
+                                <div class="emoji">${status.emoji}</div>
+                                <div class="label">${status.label}</div>
+                                <div class="description">${status.description}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="status-panel-buttons">
+                        <button class="status-panel-btn clear-btn">🗑️ 清除状态</button>
+                        <button class="status-panel-btn cancel-btn">取消</button>
+                        <button class="status-panel-btn confirm-btn">确认</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            let selectedStatus = currentStatus;
+            
+            modal.querySelectorAll('.status-option').forEach(option => {
+                option.addEventListener('click', () => {
+                    modal.querySelectorAll('.status-option').forEach(opt => opt.classList.remove('selected'));
+                    option.classList.add('selected');
+                    selectedStatus = {
+                        emoji: option.dataset.emoji,
+                        label: option.dataset.label,
+                        animation: option.dataset.animation
+                    };
+                });
+            });
+            
+            modal.querySelector('.clear-btn').addEventListener('click', () => {
+                setSeatStatus(card, seatIndex, null, currentDay);
+                modal.remove();
+                refreshAllLessons();
+            });
+            
+            modal.querySelector('.confirm-btn').addEventListener('click', () => {
+                setSeatStatus(card, seatIndex, selectedStatus, currentDay);
+                modal.remove();
+                refreshAllLessons();
+            });
+            
+            modal.querySelector('.cancel-btn').addEventListener('click', () => modal.remove());
+            
+            modal.addEventListener('click', e => e.target === modal && modal.remove());
+        }
+
+        // 更新课程显示
+        function updateLessonDisplay(card, result, startOffset) {
+            const seatContainer = card.querySelector('.seat-container');
+            const messageArea = card.querySelector('.message-area');
+            const peopleCountSpan = card.querySelector('.people-count');
+            const totalSeatsSpan = card.querySelector('.total-seats');
+            const absenceCountSpan = card.querySelector('.absence-count');
+            const missedCountSpan = card.querySelector('.missed-count');
+            const insertCountSpan = card.querySelector('.insert-count');
+            const lastIndexSpan = card.querySelector('.last-index');
+            const startIdxSpan = card.querySelector('.start-index');
+            const actionChipsDiv = card.querySelector('.action-chips');
+
+            const totalSeats = parseInt(card.querySelector('.seats-display')?.textContent, 10) || 20;
+            const N = fixedNames.length;
+
+            peopleCountSpan.textContent = N;
+            totalSeatsSpan.textContent = totalSeats;
+            absenceCountSpan.textContent = result.absentCount;
+            if (missedCountSpan) missedCountSpan.textContent = result.missedCount;
+            if (insertCountSpan) insertCountSpan.textContent = result.insertCount;
+            lastIndexSpan.textContent = `${result.lastUsedIndex + 1}/${N}`;
+            if (startIdxSpan) startIdxSpan.textContent = `${(startOffset % N) + 1}/${N}`;
+
+            // 生成座位卡片
+            seatContainer.innerHTML = result.seatItems.map((item, i) => {
+                const seatStatus = getSeatStatus(card, i, currentDay);
+                return `
+                    <div class="seat-card occupied" data-seat-index="${i}">
+                        <div class="seat-num">#${i + 1}</div>
+                        <div class="seat-name">${escapeHtml(item.name)}</div>
+                        ${seatStatus ? `<div class="seat-status-emoji ${seatStatus.animation || ''}">${seatStatus.emoji}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // 座位点击事件
+            seatContainer.querySelectorAll('.seat-card').forEach(seat => {
+                seat.addEventListener('click', e => {
+                    e.stopPropagation();
+                    const seatIndex = parseInt(seat.dataset.seatIndex, 10);
+                    showStatusModal(card, seatIndex, getSeatStatus(card, seatIndex, currentDay));
+                });
+            });
+
+            // 更新姓名芯片
+            if (actionChipsDiv) {
+                const absentSet = getLessonAbsentSet(card, currentDay);
+                const missedSet = getLessonMissedSet(card, currentDay);
+                const insertSet = getLessonInsertSet(card, currentDay);
+                
+                actionChipsDiv.innerHTML = fixedNames.map((name, idx) => {
+                    let chipClass = 'name-chip';
+                    if (absentSet.has(idx)) chipClass += ' absent';
+                    else if (missedSet.has(idx)) chipClass += ' missed';
+                    else if (insertSet.has(idx)) chipClass += ' insert';
+                    return `<span class="${chipClass}" data-index="${idx}">${escapeHtml(name)}</span>`;
+                }).join('');
+
+                actionChipsDiv.querySelectorAll('.name-chip').forEach(chip => {
+                    chip.addEventListener('click', e => {
+                        e.stopPropagation();
+                        const idx = parseInt(chip.dataset.index, 10);
+                        const absentSet = getLessonAbsentSet(card, currentDay);
+                        const missedSet = getLessonMissedSet(card, currentDay);
+                        const insertSet = getLessonInsertSet(card, currentDay);
+                        
+                        if (absentSet.has(idx)) {
+                            absentSet.delete(idx);
+                            missedSet.add(idx);
+                        } else if (missedSet.has(idx)) {
+                            missedSet.delete(idx);
+                            insertSet.add(idx);
+                        } else if (insertSet.has(idx)) {
+                            insertSet.delete(idx);
+                        } else {
+                            absentSet.add(idx);
+                        }
+                        
+                        setLessonAbsentSet(card, absentSet, currentDay);
+                        setLessonMissedSet(card, missedSet, currentDay);
+                        setLessonInsertSet(card, insertSet, currentDay);
+                        refreshAllLessons();
+                    });
+                });
+            }
+
+            // 信息提示
+            const startPerson = fixedNames[startOffset % N];
+            const lastPerson = fixedNames[result.lastUsedIndex];
+            let message = `从第 ${(startOffset % N) + 1} 位 “${startPerson}” 开始，最后一人是第 ${result.lastUsedIndex + 1} 位 “${lastPerson}”。`;
+            
+            if (result.absentCount) {
+                const absentNames = Array.from(getLessonAbsentSet(card, currentDay)).map(i => fixedNames[i]).join('、');
+                message = `😷 请假 ${result.absentCount} 人：${absentNames}。` + message;
+            }
+            if (result.missedCount) {
+                const missedNames = Array.from(getLessonMissedSet(card, currentDay)).map(i => fixedNames[i]).join('、');
+                message = `⬜ 未就坐 ${result.missedCount} 人：${missedNames}。` + message;
+            }
+            if (result.insertCount) {
+                const insertNames = Array.from(getLessonInsertSet(card, currentDay)).map(i => fixedNames[i]).join('、');
+                message = `🟡 补坐 ${result.insertCount} 人：${insertNames}。` + message;
+            }
+            messageArea.innerHTML = message;
+        }
+
+        // 创建座位选择器
+        function createSeatsPicker(button, display, initialValue = 20) {
+            const picker = document.createElement('div');
+            picker.className = 'seats-picker';
+            
+            let currentValue = initialValue;
+            
+            picker.innerHTML = `
+                <div class="picker-header">👆 上下滑动选择座位数</div>
+                <div class="picker-slider">
+                    ${Array.from({ length: 100 }, (_, i) => `
+                        <div class="picker-item ${i === initialValue ? 'selected' : ''}" data-value="${i}">${i}</div>
+                    `).join('')}
+                </div>
+                <div class="picker-footer">
+                    <button class="picker-btn cancel-btn">取消</button>
+                    <button class="picker-btn confirm-btn">确认</button>
+                </div>
+            `;
+            
+            document.body.appendChild(picker);
+            
+            const rect = button.getBoundingClientRect();
+            picker.style.top = `${rect.bottom + window.scrollY}px`;
+            picker.style.left = `${rect.left + window.scrollX}px`;
+            picker.classList.add('show');
+            
+            setTimeout(() => {
+                const selected = picker.querySelector('.picker-item.selected');
+                selected?.scrollIntoView({ block: 'center' });
+            }, 50);
+            
+            picker.querySelectorAll('.picker-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    picker.querySelectorAll('.picker-item').forEach(i => i.classList.remove('selected'));
+                    item.classList.add('selected');
+                    currentValue = parseInt(item.dataset.value, 10);
+                });
+            });
+            
+            picker.querySelector('.confirm-btn').addEventListener('click', () => {
+                display.textContent = currentValue;
+                picker.remove();
+                refreshAllLessons();
+            });
+            
+            picker.querySelector('.cancel-btn').addEventListener('click', () => picker.remove());
+            
+            setTimeout(() => {
+                const clickOutside = e => {
+                    if (!picker.contains(e.target) && e.target !== button) {
+                        picker.remove();
+                        document.removeEventListener('click', clickOutside);
+                    }
+                };
+                document.addEventListener('click', clickOutside);
+            }, 100);
+        }
+
+        // 创建课程卡片
+        function createLessonCard(lessonNumber, seats = 20) {
+            const lessonId = `lesson_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'lesson-card';
+            cardDiv.dataset.lessonId = lessonId;
+
+            cardDiv.innerHTML = `
+                <div class="lesson-header">
+                    <div class="lesson-title">
+                        <input type="text" class="lesson-title-input" value="第 ${lessonNumber} 节课">
+                    </div>
+                    <div class="lesson-info">
+                        <div class="seats-selector">
+                            <button class="seats-button">
+                                🪑 座位数 <span class="seats-display">${seats}</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="lesson-actions">
+                        <button class="btn small-btn delete-lesson" style="border-color:#b13e3e; color:#a13535;">🗑️ 删除</button>
+                    </div>
+                </div>
+
+                <div class="action-chips"></div>
+
+                <div class="stats-row">
+                    <div class="stat"><span class="stat-label">📋 总名单</span><span class="stat-value people-count">${fixedNames.length}</span></div>
+                    <div class="stat"><span class="stat-label">🪑 座位数</span><span class="stat-value total-seats">${seats}</span></div>
+                    <div class="stat"><span class="stat-label">😷 请假</span><span class="stat-value absence-count">0</span></div>
+                    <div class="stat"><span class="stat-label">⬜ 未就坐</span><span class="stat-value missed-count">0</span></div>
+                    <div class="stat"><span class="stat-label">🟡 补坐</span><span class="stat-value insert-count">0</span></div>
+                    <div class="stat"><span class="stat-label">▶️ 起始</span><span class="stat-value start-index">-/—</span></div>
+                    <div class="stat"><span class="stat-label">🏁 末位</span><span class="stat-value last-index">-/—</span></div>
+                </div>
+
+                <div class="seat-grid seat-container"></div>
+                <div class="info-note message-area"></div>
+            `;
+
+            // 座位数选择
+            const seatsButton = cardDiv.querySelector('.seats-button');
+            const seatsDisplay = cardDiv.querySelector('.seats-display');
+            
+            seatsButton.addEventListener('click', e => {
+                e.stopPropagation();
+                createSeatsPicker(seatsButton, seatsDisplay, parseInt(seatsDisplay.textContent, 10));
+            });
+            
+            seatsButton.addEventListener('dblclick', e => {
+                e.stopPropagation();
+                const currentSeats = parseInt(seatsDisplay.textContent, 10);
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.value = currentSeats;
+                input.min = 1;
+                input.max = 300;
+                input.style.cssText = 'width:70px; padding:0.3rem; border-radius:40px; border:2px solid #97c3e6; text-align:center;';
+                
+                const parent = seatsButton.parentNode;
+                seatsButton.style.display = 'none';
+                parent.appendChild(input);
+                input.focus();
+                
+                input.addEventListener('blur', () => {
+                    seatsDisplay.textContent = parseInt(input.value, 10) || 20;
+                    seatsButton.style.display = 'flex';
+                    input.remove();
+                    refreshAllLessons();
+                });
+                
+                input.addEventListener('keypress', e => e.key === 'Enter' && input.blur());
+            });
+
+            // 删除课程
+            cardDiv.querySelector('.delete-lesson').addEventListener('click', () => {
+                if (confirm('删除此课程？')) {
+                    [dayAbsentSelections, dayMissedSelections, dayInsertSelections, daySeatStatuses].forEach(map => {
+                        for (let key of map.keys()) {
+                            if (key.includes(`-${lessonId}-`)) map.delete(key);
+                        }
+                    });
+                    cardDiv.remove();
+                    refreshAllLessons();
+                }
+            });
+
+            return cardDiv;
+        }
+
+        // 添加课程
+        addLessonBtn.addEventListener('click', () => {
+            lessonsContainer.appendChild(createLessonCard(lessonsContainer.children.length + 1, 20));
+            refreshAllLessons();
+        });
+
+        // 日期切换
+        function goToPrevDay() {
+            if (currentDay > 0) {
+                currentDay--;
+                refreshAllLessons();
+                startPersonSelect.value = getCurrentDayOffset();
+            } else {
+                alert('已经是第一天了');
+            }
+        }
+
+        function goToNextDay() {
+            currentDay++;
+            const prevDay = currentDay - 1;
+            
+            if (dayOffsets.has(prevDay)) {
+                const tempDay = currentDay;
+                currentDay = prevDay;
+                refreshAllLessons();
+                
+                const lastCard = document.querySelectorAll('.lesson-card:last-child');
+                if (lastCard.length) {
+                    const lastIndexSpan = lastCard[0].querySelector('.last-index');
+                    if (lastIndexSpan) {
+                        const lastIndex = parseInt(lastIndexSpan.textContent.split('/')[0], 10) - 1;
+                        dayOffsets.set(tempDay, (lastIndex + 1) % fixedNames.length);
+                    } else {
+                        dayOffsets.set(tempDay, 0);
+                    }
+                } else {
+                    dayOffsets.set(tempDay, 0);
+                }
+                currentDay = tempDay;
+            } else {
+                dayOffsets.set(currentDay, 0);
+            }
+            
+            refreshAllLessons();
+            startPersonSelect.value = getCurrentDayOffset();
+        }
+
+        prevDayBtn.addEventListener('click', goToPrevDay);
+        nextDayBtn.addEventListener('click', goToNextDay);
+
+        // 初始化
+        function initDefaultLessons() {
+            lessonsContainer.innerHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                lessonsContainer.appendChild(createLessonCard(i, 20 + (i - 1) * 2));
+            }
+            setTimeout(refreshAllLessons, 50);
+        }
+
+        updateStartSelector();
+        initDefaultLessons();
+    })();
+</script>
+</body>
+</html>
