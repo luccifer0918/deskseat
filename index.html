@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>座位生成</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background: #e9f2f9;
+            padding: 1.8rem 1.5rem;
+            min-height: 100vh;
+        }
+        .app {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        .header {
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 600;
+            background: linear-gradient(145deg, #0a3f5e, #1d6b96);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            background: #ffc107;
+            color: #1d4e72;
+            padding: 0.2rem 1.5rem;
+            border-radius: 60px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .sub {
+            color: #19587b;
+            border-left: 6px solid #5fc1e0;
+            padding-left: 1.3rem;
+            margin-top: 0.5rem;
+            font-size: 1.1rem;
+        }
+        /* 全局名单栏 */
+        .master-panel {
+            background: rgba(255,255,255,0.8);
+            backdrop-filter: blur(8px);
+            border-radius: 2.5rem;
+            padding: 1.8rem 2rem;
+            margin-bottom: 2rem;
+            border: 1px solid white;
+            box-shadow: 0 10px 25px -15px #0e3d59;
+        }
+        .master-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+        .master-title h2 {
+            color: #125e88;
+            font-size: 1.6rem;
+            font-weight: 600;
+        }
+        .master-badge {
+            background: #1b4f72;
+            color: white;
+            padding: 0.3rem 1.5rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+        }
+        .start-selector {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #fff3e0;
+            padding: 0.3rem 1.5rem;
+            border-radius: 60px;
+            margin-left: auto;
+        }
+        .start-selector label {
+            font-weight: 600;
+            color: #b45b0a;
+        }
+        .start-selector select {
+            padding: 0.4rem 1rem;
+            border: 2px solid #f0b27a;
+            border-radius: 40px;
+            background: white;
+            font-weight: 500;
+            color: #125177;
+            min-width: 150px;
+        }
+        .master-name-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+        .master-textarea {
+            flex: 3 1 500px;
+        }
+        .master-textarea textarea {
+            width: 100%;
+            padding: 1.2rem 1.5rem;
+            border: 2px solid #b9d9f2;
+            border-radius: 28px;
+            font-size: 1rem;
+            resize: vertical;
+            min-height: 130px;
+            background: white;
+        }
+        .master-controls {
+            flex: 1 1 250px;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background: #e1f0fa;
+            padding: 1.2rem 1.8rem;
+            border-radius: 32px;
+        }
+        .file-label {
+            background: #1b4f72;
+            color: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 40px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            border: none;
+        }
+        /* 日期控制栏 */
+        .date-bar {
+            background: rgba(255,255,255,0.7);
+            border-radius: 3rem;
+            padding: 1.2rem 2rem;
+            margin-bottom: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 2rem;
+            border: 1px solid white;
+        }
+        .date-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #d4e9f7;
+            padding: 0.4rem 1.8rem;
+            border-radius: 40px;
+        }
+        .date-btn {
+            background: white;
+            border: 2px solid #1b4f72;
+            color: #1b4f72;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .date-btn:hover {
+            background: #e1effa;
+        }
+        .current-date {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #12547a;
+            min-width: 120px;
+            text-align: center;
+        }
+        .offset-indicator {
+            background: #1b4f72;
+            color: white;
+            padding: 0.4rem 1.8rem;
+            border-radius: 40px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .global-actions {
+            display: flex;
+            gap: 1rem;
+            margin-left: auto;
+            flex-wrap: wrap;
+        }
+        .btn {
+            background: white;
+            border: 2px solid #1b4f72;
+            color: #1b4f72;
+            padding: 0.7rem 1.8rem;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-primary {
+            background: #1b4f72;
+            color: white;
+            border-color: #1b4f72;
+        }
+        .btn-primary:hover {
+            background: #0e405c;
+        }
+        .btn:hover {
+            background: #e1effa;
+        }
+        /* 课程序列 */
+        .lessons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+        .lesson-card {
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(4px);
+            border-radius: 2.5rem;
+            padding: 1.8rem 2rem 2rem;
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+        .lesson-header {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+        .lesson-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            background: #d3e8f8;
+            padding: 0.2rem 2rem;
+            border-radius: 60px;
+        }
+        .lesson-title input {
+            border: none;
+            background: transparent;
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #0f4465;
+            width: 200px;
+            border-bottom: 2px dashed #3683af;
+        }
+        .lesson-title input:focus {
+            outline: none;
+            border-bottom: 2px solid #125e88;
+        }
+        .lesson-info {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        .lesson-info span {
+            background: #e1f0fa;
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            color: #125177;
+        }
+        .lesson-actions {
+            display: flex;
+            gap: 0.7rem;
+            margin-left: auto;
+            flex-wrap: wrap;
+        }
+        .small-btn {
+            padding: 0.4rem 1.3rem;
+            font-size: 0.85rem;
+        }
+        /* 请假选择器 */
+        .absence-selector-panel {
+            background: #fff3e0;
+            border-radius: 50px;
+            padding: 1rem 2rem;
+            margin-bottom: 1.2rem;
+        }
+        .selector-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.8rem;
+        }
+        .selector-header label {
+            font-weight: 600;
+            color: #b45b0a;
+        }
+        .absence-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+            background: white;
+            padding: 0.8rem 1.5rem;
+            border-radius: 60px;
+            min-height: 3rem;
+        }
+        .name-chip {
+            background: #e1f0fa;
+            border: 2px solid #97c3e6;
+            color: #125177;
+            padding: 0.3rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: 0.1s;
+            user-select: none;
+        }
+        .name-chip.selected {
+            background: #e63946;
+            border-color: #b13e3e;
+            color: white;
+        }
+        .stats-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2rem;
+            background: #dbeefc;
+            padding: 0.8rem 2rem;
+            border-radius: 60px;
+            margin: 1rem 0;
+        }
+        .stat {
+            display: flex;
+            gap: 0.5rem;
+            align-items: baseline;
+        }
+        .stat-label {
+            font-weight: 600;
+            color: #0e4b70;
+        }
+        .stat-value {
+            background: #1b4f72;
+            color: white;
+            padding: 0.2rem 1rem;
+            border-radius: 40px;
+        }
+        .seat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(95px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        .seat-card {
+            background: white;
+            border-radius: 1.5rem 0.6rem 1.5rem 0.6rem;
+            padding: 1rem 0.2rem;
+            text-align: center;
+            box-shadow: 0 8px 18px -16px #0a334a;
+            border: 2px solid white;
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .seat-card.occupied {
+            background: linear-gradient(145deg, #1b4f72, #2b6d95);
+            color: white;
+        }
+        .seat-num {
+            font-size: 0.7rem;
+            background: rgba(0,0,0,0.1);
+            padding: 0.2rem 0.8rem;
+            border-radius: 30px;
+            margin-bottom: 5px;
+        }
+        .info-note {
+            background: #e4f1fb;
+            border-radius: 60px;
+            padding: 0.8rem 2rem;
+            margin-top: 0.8rem;
+            color: #0e4b70;
+            border-left: 6px solid #3892bd;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 2.5rem;
+            color: #25658b;
+        }
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="header">
+        <h1>
+            📚 座位生成
+            <span class="badge">可选择从谁开始</span>
+        </h1>
+        <div class="sub">📌 </div>
+    </div>
+
+    <!-- 主名单面板 (共享) -->
+    <div class="master-panel">
+        <div class="master-title">
+            <h2>📋 姓名池</h2>
+            <span class="master-badge" id="masterCount">0 人</span>
+            <div class="start-selector">
+                <label>▶️ 今日开始同学：</label>
+                <select id="startPersonSelect">
+                    <option value="0">请选择</option>
+                </select>
+                <button class="btn small-btn" id="applyStartBtn">应用</button>
+            </div>
+        </div>
+        <div class="master-name-area">
+            <div class="master-textarea">
+                <textarea id="masterNameList" placeholder="输入总名单，一行一个或逗号分隔……">选择同学名单...</textarea>
+            </div>
+            <div class="master-controls">
+                <label class="file-label">📂 导入名单文件
+                    <input type="file" id="masterFileInput" accept=".txt,.csv,text/plain" style="display: none;">
+                </label>
+                <span id="masterFileName" style="color:#135e88;">未选择文件</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 日期控制栏 -->
+    <div class="date-bar">
+        <div class="date-controls">
+            <button class="date-btn" id="prevDayBtn">←</button>
+            <span class="current-date" id="currentDateDisplay">第 1 天</span>
+            <button class="date-btn" id="nextDayBtn">→</button>
+        </div>
+        <div class="offset-indicator">
+            <span>▶️ 今日起始偏移</span>
+            <span id="globalOffset">0</span>
+        </div>
+        <div class="global-actions">
+            <button class="btn" id="addLessonBtn">➕ 添加课程</button>
+            <button class="btn btn-primary" id="refreshAllBtn">🔄 刷新当前日期</button>
+        </div>
+    </div>
+
+    <!-- 课程序列容器 -->
+    <div id="lessonsContainer" class="lessons-container"></div>
+
+    <div class="footer">
+        ⚡ 点击姓名标记请假（红色），该座位空缺，后面同学依次前移。可在顶部下拉菜单选择从谁开始循环。每天独立保存。
+    </div>
+</div>
+
+<script>
+    (function() {
+        // ---------- 全局状态 ----------
+        let currentDay = 0;                 // 当前天数索引 (0 = 第1天)
+        const dayOffsets = new Map();        // 存储每天的开始偏移 key: 天数, value: 偏移量
+        const dayAbsenceSelections = new Map(); // 存储每天每节课的请假状态 key: `day-课程ID`, value: Set of 索引
+        
+        // 初始化第1天的偏移为0
+        dayOffsets.set(0, 0);
+
+        const globalOffsetSpan = document.getElementById('globalOffset');
+        const currentDateDisplay = document.getElementById('currentDateDisplay');
+        const masterTextarea = document.getElementById('masterNameList');
+        const masterCountSpan = document.getElementById('masterCount');
+        const masterFileInput = document.getElementById('masterFileInput');
+        const masterFileNameSpan = document.getElementById('masterFileName');
+        const lessonsContainer = document.getElementById('lessonsContainer');
+        const addLessonBtn = document.getElementById('addLessonBtn');
+        const refreshAllBtn = document.getElementById('refreshAllBtn');
+        const prevDayBtn = document.getElementById('prevDayBtn');
+        const nextDayBtn = document.getElementById('nextDayBtn');
+        const startPersonSelect = document.getElementById('startPersonSelect');
+        const applyStartBtn = document.getElementById('applyStartBtn');
+
+        // 解析姓名
+        function parseNames(raw) {
+            if (!raw.trim()) return [];
+            let str = raw.replace(/[，、\s]+/g, ',');
+            return str.split(',').map(s => s.trim()).filter(name => name !== '');
+        }
+
+        // 更新总名单人数显示和下拉框
+        function updateMasterCount() {
+            const names = parseNames(masterTextarea.value);
+            masterCountSpan.textContent = names.length + ' 人';
+            
+            // 更新下拉框
+            startPersonSelect.innerHTML = '<option value="0">请选择起始同学</option>';
+            names.forEach((name, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = `${index + 1}. ${name}`;
+                startPersonSelect.appendChild(option);
+            });
+            
+            return names;
+        }
+
+        // 转义HTML
+        function escapeHtml(unsafe) {
+            if (!unsafe) return '';
+            return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        // 核心算法：给定总名单、请假索引集合、座位数、起始偏移
+        function computeSeatingWithSelection(masterNames, absentIndices, totalSeats, baseOffset) {
+            if (masterNames.length === 0) {
+                let seatItems = Array(totalSeats).fill({ name: '(无名单)' });
+                return { seatItems, lastUsedIndex: 0, nextStart: 0, absentCount: 0 };
+            }
+
+            const N = masterNames.length;
+            let startIdx = baseOffset % N;
+            if (startIdx < 0) startIdx += N;
+
+            // 生成初始座位顺序
+            let initialIndices = [];
+            for (let i = 0; i < totalSeats; i++) {
+                initialIndices.push((startIdx + i) % N);
+            }
+
+            // 找出所有未请假的索引
+            let availableIndices = [];
+            for (let i = 0; i < initialIndices.length; i++) {
+                let idx = initialIndices[i];
+                if (!absentIndices.has(idx)) {
+                    availableIndices.push(idx);
+                }
+            }
+
+            // 构建座位
+            let seatItems = [];
+            let usedIndices = [];
+            let nextAvailableIdx = (startIdx + totalSeats) % N;
+
+            for (let i = 0; i < totalSeats; i++) {
+                if (i < availableIndices.length) {
+                    let personIdx = availableIndices[i];
+                    seatItems.push({
+                        name: masterNames[personIdx]
+                    });
+                    usedIndices.push(personIdx);
+                } else {
+                    while (absentIndices.has(nextAvailableIdx)) {
+                        nextAvailableIdx = (nextAvailableIdx + 1) % N;
+                    }
+                    seatItems.push({
+                        name: masterNames[nextAvailableIdx]
+                    });
+                    usedIndices.push(nextAvailableIdx);
+                    nextAvailableIdx = (nextAvailableIdx + 1) % N;
+                }
+            }
+
+            let lastUsedIndex = usedIndices.length > 0 ? usedIndices[usedIndices.length - 1] : startIdx;
+            let nextStart = (lastUsedIndex + 1) % N;
+            let absentCount = absentIndices.size;
+
+            return {
+                seatItems: seatItems,
+                lastUsedIndex: lastUsedIndex,
+                nextStart: nextStart,
+                absentCount: absentCount
+            };
+        }
+
+        // 获取当前天的偏移
+        function getCurrentDayOffset() {
+            if (!dayOffsets.has(currentDay)) {
+                // 如果是新的一天，基于前一天的最后一天计算
+                const prevDay = currentDay - 1;
+                if (dayOffsets.has(prevDay)) {
+                    dayOffsets.set(currentDay, dayOffsets.get(prevDay));
+                } else {
+                    dayOffsets.set(currentDay, 0);
+                }
+            }
+            return dayOffsets.get(currentDay);
+        }
+
+        // 获取当前天某课程的请假状态
+        function getLessonAbsentSet(card, day = currentDay) {
+            const lessonId = card.dataset.lessonId;
+            if (!lessonId) return new Set();
+            const key = `${day}-${lessonId}`;
+            return dayAbsenceSelections.get(key) || new Set();
+        }
+
+        // 保存当前天某课程的请假状态
+        function setLessonAbsentSet(card, absentSet, day = currentDay) {
+            const lessonId = card.dataset.lessonId;
+            if (!lessonId) return;
+            const key = `${day}-${lessonId}`;
+            if (absentSet.size === 0) {
+                dayAbsenceSelections.delete(key);
+            } else {
+                dayAbsenceSelections.set(key, new Set(absentSet));
+            }
+        }
+
+        // 刷新所有课程
+        function refreshAllLessons() {
+            const masterNames = parseNames(masterTextarea.value);
+            if (masterNames.length === 0) {
+                alert('总名单不能为空');
+                return;
+            }
+
+            const currentOffset = getCurrentDayOffset();
+            let runningOffset = currentOffset;
+
+            const cards = document.querySelectorAll('.lesson-card');
+            cards.forEach((card) => {
+                const seatsInput = card.querySelector('.lesson-seats-input');
+                const totalSeats = parseInt(seatsInput?.value, 10) || 20;
+                
+                const absentSet = getLessonAbsentSet(card, currentDay);
+                const result = computeSeatingWithSelection(masterNames, absentSet, totalSeats, runningOffset);
+
+                updateLessonDisplay(card, result, masterNames, absentSet, runningOffset);
+                
+                // 更新运行偏移为下一节课的起始
+                runningOffset = result.nextStart;
+            });
+
+            // 更新显示
+            globalOffsetSpan.textContent = currentOffset;
+            currentDateDisplay.textContent = `第 ${currentDay + 1} 天`;
+            
+            // 更新下拉框选中
+            startPersonSelect.value = currentOffset;
+        }
+
+        // 更新单个课程卡片的显示
+        function updateLessonDisplay(card, result, masterNames, absentSet, startOffset) {
+            const seatContainer = card.querySelector('.seat-container');
+            const messageArea = card.querySelector('.message-area');
+            const peopleCountSpan = card.querySelector('.people-count');
+            const totalSeatsSpan = card.querySelector('.total-seats');
+            const absenceCountSpan = card.querySelector('.absence-count');
+            const lastIndexSpan = card.querySelector('.last-index');
+            const startIdxSpan = card.querySelector('.start-index');
+            const absenceChipsDiv = card.querySelector('.absence-chips');
+            const seatsInput = card.querySelector('.lesson-seats-input');
+
+            const totalSeats = parseInt(seatsInput?.value, 10) || 20;
+            const N = masterNames.length;
+
+            peopleCountSpan.textContent = N;
+            totalSeatsSpan.textContent = totalSeats;
+            absenceCountSpan.textContent = result.absentCount;
+            lastIndexSpan.textContent = (result.lastUsedIndex + 1) + '/' + N;
+            if (startIdxSpan) {
+                startIdxSpan.textContent = (startOffset % N + 1) + '/' + N;
+            }
+
+            // 生成座位卡片
+            let seatsHtml = '';
+            for (let i = 0; i < result.seatItems.length; i++) {
+                const item = result.seatItems[i];
+                const seatNum = i + 1;
+                seatsHtml += `
+                    <div class="seat-card occupied">
+                        <div class="seat-num">#${seatNum}</div>
+                        <div class="seat-name">${escapeHtml(item.name)}</div>
+                    </div>
+                `;
+            }
+            seatContainer.innerHTML = seatsHtml;
+
+            // 更新请假芯片
+            if (absenceChipsDiv) {
+                updateAbsenceChips(absenceChipsDiv, masterNames, absentSet, card);
+            }
+
+            const startPerson = masterNames[startOffset % N];
+            const lastPerson = masterNames[result.lastUsedIndex];
+            if (result.absentCount === 0) {
+                messageArea.innerHTML = `✅ 无请假。从第 ${startOffset % N + 1} 位 “${startPerson}” 开始，最后一人是第 ${result.lastUsedIndex + 1} 位 “${lastPerson}”。`;
+            } else {
+                let absentNames = Array.from(absentSet).map(idx => masterNames[idx]).join('、');
+                messageArea.innerHTML = `😷 请假 ${result.absentCount} 人：${absentNames}。后面同学依次前移补位。`;
+            }
+        }
+
+        // 更新请假芯片
+        function updateAbsenceChips(container, masterNames, absentSet, card) {
+            if (!container) return;
+            
+            let html = '';
+            masterNames.forEach((name, idx) => {
+                const selected = absentSet.has(idx) ? 'selected' : '';
+                html += `<span class="name-chip ${selected}" data-index="${idx}">${escapeHtml(name)}</span>`;
+            });
+            container.innerHTML = html;
+
+            container.querySelectorAll('.name-chip').forEach(chip => {
+                chip.addEventListener('click', function() {
+                    const idx = parseInt(this.dataset.index, 10);
+                    const set = getLessonAbsentSet(card, currentDay);
+                    
+                    if (set.has(idx)) {
+                        set.delete(idx);
+                    } else {
+                        set.add(idx);
+                    }
+                    
+                    // 保存当前天的请假状态
+                    setLessonAbsentSet(card, set, currentDay);
+                    
+                    // 刷新所有课程
+                    refreshAllLessons();
+                });
+            });
+        }
+
+        // 创建课程卡片
+        function createLessonCard(title = '新课程', seats = 20) {
+            const lessonId = 'lesson_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'lesson-card';
+            cardDiv.dataset.lessonId = lessonId;
+
+            cardDiv.innerHTML = `
+                <div class="lesson-header">
+                    <div class="lesson-title">
+                        <input type="text" class="lesson-title-input" value="${escapeHtml(title)}">
+                    </div>
+                    <div class="lesson-info">
+                        <span>🪑 <input type="number" class="lesson-seats-input" value="${seats}" min="1" max="300" style="width:70px; padding:0.3rem; border-radius:40px; border:2px solid #97c3e6; text-align:center;"></span>
+                    </div>
+                    <div class="lesson-actions">
+                        <button class="btn small-btn delete-lesson" style="border-color:#b13e3e; color:#a13535;">🗑️ 删除</button>
+                    </div>
+                </div>
+
+                <div class="absence-selector-panel">
+                    <div class="selector-header">
+                        <label>👥 点击姓名标记请假 (红色)</label>
+                    </div>
+                    <div class="absence-chips"></div>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat"><span class="stat-label">📋 总名单</span><span class="stat-value people-count">0</span></div>
+                    <div class="stat"><span class="stat-label">🪑 座位数</span><span class="stat-value total-seats">${seats}</span></div>
+                    <div class="stat"><span class="stat-label">😷 请假</span><span class="stat-value absence-count">0</span></div>
+                    <div class="stat"><span class="stat-label">▶️ 起始</span><span class="stat-value start-index">-/—</span></div>
+                    <div class="stat"><span class="stat-label">🏁 末位</span><span class="stat-value last-index">-/—</span></div>
+                </div>
+
+                <div class="seat-grid seat-container"></div>
+                <div class="info-note message-area"></div>
+            `;
+
+            const deleteBtn = cardDiv.querySelector('.delete-lesson');
+            deleteBtn.addEventListener('click', function() {
+                if (confirm('删除此课程？')) {
+                    // 删除所有天的该课程请假记录
+                    for (let [key, _] of dayAbsenceSelections) {
+                        if (key.endsWith(`-${lessonId}`)) {
+                            dayAbsenceSelections.delete(key);
+                        }
+                    }
+                    cardDiv.remove();
+                    refreshAllLessons();
+                }
+            });
+
+            const seatsInput = cardDiv.querySelector('.lesson-seats-input');
+            seatsInput.addEventListener('change', function() {
+                refreshAllLessons();
+            });
+
+            return cardDiv;
+        }
+
+        // 添加课程
+        addLessonBtn.addEventListener('click', function() {
+            const newCard = createLessonCard(`第${lessonsContainer.children.length + 1}节课`, 20);
+            lessonsContainer.appendChild(newCard);
+            refreshAllLessons();
+        });
+
+        // 应用起始同学
+        applyStartBtn.addEventListener('click', function() {
+            const selectedIndex = parseInt(startPersonSelect.value, 10);
+            if (isNaN(selectedIndex)) {
+                alert('请选择起始同学');
+                return;
+            }
+            
+            // 设置当前天的偏移
+            dayOffsets.set(currentDay, selectedIndex);
+            refreshAllLessons();
+        });
+
+        // 切换日期
+        function goToPrevDay() {
+            if (currentDay > 0) {
+                currentDay--;
+                refreshAllLessons();
+            } else {
+                alert('已经是第一天了');
+            }
+        }
+
+        function goToNextDay() {
+            currentDay++;
+            // 初始化新一天的偏移（基于前一天的最后一节课）
+            const prevDay = currentDay - 1;
+            if (dayOffsets.has(prevDay)) {
+                // 先切换到前一天获取最后一个人的索引
+                const tempDay = currentDay;
+                currentDay = prevDay;
+                refreshAllLessons(); // 刷新前一天确保数据最新
+                
+                const cards = document.querySelectorAll('.lesson-card');
+                if (cards.length > 0) {
+                    const lastCard = cards[cards.length - 1];
+                    const lastIndexSpan = lastCard.querySelector('.last-index');
+                    if (lastIndexSpan) {
+                        const lastIndexText = lastIndexSpan.textContent;
+                        const lastIndex = parseInt(lastIndexText.split('/')[0], 10) - 1;
+                        const masterNames = parseNames(masterTextarea.value);
+                        if (masterNames.length > 0) {
+                            dayOffsets.set(tempDay, (lastIndex + 1) % masterNames.length);
+                        } else {
+                            dayOffsets.set(tempDay, 0);
+                        }
+                    } else {
+                        dayOffsets.set(tempDay, 0);
+                    }
+                } else {
+                    dayOffsets.set(tempDay, 0);
+                }
+                
+                currentDay = tempDay;
+            } else {
+                dayOffsets.set(currentDay, 0);
+            }
+            
+            refreshAllLessons();
+        }
+
+        prevDayBtn.addEventListener('click', goToPrevDay);
+        nextDayBtn.addEventListener('click', goToNextDay);
+
+        // 刷新当前日期
+        refreshAllBtn.addEventListener('click', refreshAllLessons);
+
+        // 名单变化时更新
+        masterTextarea.addEventListener('input', function() {
+            updateMasterCount();
+            refreshAllLessons();
+        });
+
+        masterFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            masterFileNameSpan.textContent = file.name.length > 25 ? file.name.slice(0,20)+'…' : file.name;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                masterTextarea.value = ev.target.result;
+                updateMasterCount();
+                refreshAllLessons();
+            };
+            reader.readAsText(file, 'UTF-8');
+        });
+
+        // 初始化默认课程
+        function initDefaultLessons() {
+            lessonsContainer.innerHTML = '';
+            const defaultLessons = ['语文', '数学', '英语'];
+            defaultLessons.forEach((title, index) => {
+                const card = createLessonCard(title, 20 + index * 2);
+                lessonsContainer.appendChild(card);
+            });
+            setTimeout(() => refreshAllLessons(), 50);
+        }
+
+        // 启动
+        updateMasterCount();
+        initDefaultLessons();
+    })();
+</script>
+</body>
+</html>
